@@ -3,6 +3,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args)
@@ -13,9 +15,7 @@ public class Main {
             {
                 Socket newClient = server.accept();
                 System.out.println("New client entered!!");
-
                 ClientSocket newC = new ClientSocket(newClient);
-
                 new Thread(newC).start();
             }
 
@@ -32,20 +32,24 @@ public class Main {
 class ClientSocket implements Runnable
 {
     private final Socket thisCleint;
+    private static List<ClientSocket> clients = new ArrayList<>();
+    DataInputStream inputStream;
+    DataOutputStream outputStream;
 
-    public ClientSocket(Socket thisCleint) {
+    public ClientSocket(Socket thisCleint) throws IOException {
         this.thisCleint = thisCleint;
+        clients.add(this);
+        inputStream = new DataInputStream(thisCleint.getInputStream());
+        outputStream = new DataOutputStream(thisCleint.getOutputStream());
     }
-
 
     @Override
     public void run() {
         try {
-            DataInputStream inputStream = new DataInputStream(thisCleint.getInputStream());
-            DataOutputStream outputStream = new DataOutputStream(thisCleint.getOutputStream());
             outputStream.writeUTF("Server booted at port 8697");
+            String message ="";
             while (true) {
-                String message = inputStream.readUTF();
+                message = inputStream.readUTF();
                 if (message.contains("!exit")) {
                     System.exit(0);
                     thisCleint.close();
@@ -56,8 +60,7 @@ class ClientSocket implements Runnable
                     calc(inputStream, outputStream);
                 } else {
                     System.out.println(message);
-                    outputStream.writeUTF(message);
-                    outputStream.flush();
+                    broadcast(message);
                 }
             }
 
@@ -66,6 +69,23 @@ class ClientSocket implements Runnable
         {
             ioe.printStackTrace();
         }
+    }
+    public void broadcast(String message)
+    {
+        for (ClientSocket client: clients)
+        {
+            try {
+                if (client != this) client.sendMessage(message, client.outputStream);
+            }
+            catch (IOException ioe)
+            {
+                ioe.printStackTrace();
+            }
+        }
+    }
+    public void sendMessage(String message, DataOutputStream outputStr) throws IOException {
+        outputStr.writeUTF(message);
+        outputStr.flush();
     }
     public void calc(DataInputStream i, DataOutputStream o)
     {
