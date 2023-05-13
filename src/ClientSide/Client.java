@@ -4,15 +4,31 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Client
 {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
+        System.out.println("Enter IP address, ex: 192.168.1.10: ");
+        String address;
+        int port;
+        try {
+            address = sc.nextLine();
+            System.out.println("Enter port, ex:8080: ");
+            port = sc.nextInt();
+            sc.nextLine();
+        }
+        catch (InputMismatchException im)
+        {
+            System.out.println("Invalid input, address and port set to defaults!");
+            address = "localhost";
+            port = 8080;
+        }
         try
         {
-            Socket client = new Socket("localhost",8697);
+            Socket client = new Socket(address,port);
             DataInputStream inputStream = new DataInputStream(client.getInputStream());
             DataOutputStream outputStream = new DataOutputStream(client.getOutputStream());
             boolean inProcess = false;
@@ -74,7 +90,7 @@ public class Client
                             outputStream.close();
                             inputStream.close();
                             sc.close();
-                            read.interrupt();
+                            read.stop();
                         }
                     }
                 }
@@ -96,6 +112,7 @@ class readClientMess implements Runnable
 
     @Override
     public void run() {
+        int count = 0;
         while (true)
         {
             try
@@ -105,6 +122,8 @@ class readClientMess implements Runnable
             catch (IOException ioe)
             {
                 ioe.printStackTrace();
+                count++;
+                if (count >10) System.exit(1);
             }
         }
     }

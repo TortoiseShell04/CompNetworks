@@ -7,10 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
+    static int port = 8697;
     public static void main(String[] args)
     {
         try{
-            ServerSocket server = new ServerSocket(8697);
+            ServerSocket server = new ServerSocket(port);
             while (true)
             {
                 Socket newClient = server.accept();
@@ -46,7 +47,7 @@ class ClientSocket implements Runnable
     @Override
     public void run() {
         try {
-            outputStream.writeUTF("Server booted at port 8697");
+            outputStream.writeUTF("Server booted at port " +Main.port);
             String message ="";
             while (true) {
                 message = inputStream.readUTF();
